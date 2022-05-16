@@ -9,7 +9,9 @@ virtuabotixRTC myRTC(5, 6, 7); //Determina os pinos ligados ao modulo: (myRTC(cl
 // definição do escopo de variáveis globais
 
 int leituraMediaSensorU;
-
+int leituraSensorU1;
+int leituraSensorU2;
+int leituraSensorU3;
 
 
 void setup() {
@@ -24,16 +26,15 @@ void setup() {
 }
 
 void loop() {
-  mostrarHorario();
-  
-  leituraUmidadeSolo();
+
+  exibirNoMonitorSerial();
 
   delay(10000); //delay para todo o código em loop
   
 }
 
-int mostrarHorario(){
-  //Função responsável por mostrar no monitor serial as informações de data e hora.
+void exibirNoMonitorSerial(){
+  //Exibir no monitor serial as informações de data e hora.
   
   //Le as informacoes do CI
   myRTC.updateTime(); 
@@ -48,55 +49,39 @@ int mostrarHorario(){
   Serial.print("  ");
   Serial.print("Hora : ");
   //Adiciona um 0 caso o valor da hora seja <10
-  if (myRTC.hours < 10)
-  {
+  if (myRTC.hours < 10){
     Serial.print("0");
   }
   Serial.print(myRTC.hours);
   Serial.print(":");
   //Adiciona um 0 caso o valor dos minutos seja <10
-  if (myRTC.minutes < 10)
-  {
+  if (myRTC.minutes < 10){
     Serial.print("0");
   }
   Serial.print(myRTC.minutes);
   Serial.print(":");
   //Adiciona um 0 caso o valor dos segundos seja <10
-  if (myRTC.seconds < 10)
-  {
+  if (myRTC.seconds < 10){
     Serial.print("0");
   }
   Serial.println(myRTC.seconds);
 
-  delay( 1000);
+  
+  // Exibir o valor da média dos sensores no monitor serial
+  Serial.print("MEDIA DOS SENSORES:");
+  Serial.print(sensorUmidadeSolo());
+  Serial.println();
+  
 }
 
-int leituraUmidadeSolo(){
-  //Função responsável por ler os 3 sensores de humidade do solo e retornar a média
-
-  // Escopo de variáveis para a função
-  int leituraSensorU1;
-  int leituraSensorU2;
-  int leituraSensorU3;
-
-  // Leitura dos sensores e calculo da média da leitura dos 3 sensores 
+int sensorUmidadeSolo(){
+  
   leituraSensorU1 = analogRead(sensorU1);
   leituraSensorU2 = analogRead(sensorU2);
   leituraSensorU3 = analogRead(sensorU3);
   leituraMediaSensorU = ((leituraSensorU1 + leituraSensorU2 + leituraSensorU3) / 3);
 
-  // impressão dos valores dos sensores no monitor serial
-  Serial.print("SENSOR 1:");
-  Serial.print(leituraSensorU1);
-  Serial.println();
-  Serial.print("SENSOR 2:");
-  Serial.print(leituraSensorU2);
-  Serial.println();
-  Serial.print("SENSOR 3:");
-  Serial.print(leituraSensorU3);
-  Serial.println();
-  Serial.print("MEDIA DOS SENSORES:");
-  Serial.print(leituraMediaSensorU);
-  Serial.println();
+
+  return leituraMediaSensorU;
 
 }
