@@ -13,6 +13,12 @@ virtuabotixRTC myRTC(5, 6, 7); //Determina os pinos ligados ao modulo: (myRTC(cl
 #define sensorU3 A2 //Sensor de umidade do solo 3
 #define sensorDHT A3 //Sensor DHT
 #define tipoDHT DHT11 // Informa o tipo de DHT que estamos utilizando
+
+#define bombaAgua 2 // Bomba d'água ná porta D2
+#define ledVerde 9
+#define ledVermelho 8
+//#define ledAzul 1;
+
 DHT dht(sensorDHT, tipoDHT); // Parametros da biblioteca DHT
 
 File myFile;// Parametro para a biblioteca SD
@@ -25,7 +31,10 @@ int leituraSensorU2;
 int leituraSensorU3;
 float umidade;
 float temperatura;
+int situacaoBomba = 0;
 
+
+int limiteUmd = 420; // **VARIAVEL RESPONSAVEL PELO MINIMO DE UMIDADE, ALTERE PARA CALIBRAR SENSORES!**
 
 void setup() {
   Serial.begin(9600);
@@ -35,9 +44,13 @@ void setup() {
   pinMode(sensorU1, INPUT);
   pinMode(sensorU2, INPUT);
   pinMode(sensorU3, INPUT);
+  pinMode(bombaAgua, OUTPUT);
+  pinMode(ledVerde, OUTPUT);
+  pinMode(ledVermelho, OUTPUT);
+  
   dht.begin(); // Inicia o sensor DHT
 
-  myRTC.setDS1302Time(00, 5, 22, 2, 16, 5, 2022);// APENAS PARA CONFIGURAÇÃO DO RTC, COMENTAR ESSA LINHA APÓS A CONFIGURAÇÃO!!
+  //myRTC.setDS1302Time(00, 26, 22, 5, 19, 5, 2022);// APENAS PARA CONFIGURAÇÃO DO RTC, COMENTAR ESSA LINHA APÓS A CONFIGURAÇÃO!!
 
   Serial.print("Inicializando SD card...");
 
@@ -45,7 +58,9 @@ void setup() {
     Serial.println("Inicialização do SD falhou!");
     while (1);
   }
-  Serial.println("Inicialização do SD completa.");
+  Serial.println("Inicialização do SD completa."); 
+
+  apagaLeds();
 
   
 }
@@ -98,6 +113,10 @@ void exibirNoMonitorSerial(){
   Serial.print(sensorUmidade());
   Serial.println("%t");
 
+  if (situacaoBomba == 1){
+    Serial.println("***-Bomba Ligada!-***");
+  }
+
 }
 
 int sensorUmidadeSolo(){
@@ -139,7 +158,7 @@ void salvarDados(){
   myFile = SD.open("dados.csv", FILE_WRITE); //Abre o arquivo dados_irrigador.csv para guardar os dados
     
   if (myFile) { //Escrita no arquivo
-    Serial.println("Salvando dados em **dados_irrigador.csv**");
+    Serial.println("Salvando dados em **DADOS.csv**");
     //Escreve informações de data e hora no arquivo
     myFile.print(myRTC.dayofmonth);
     myFile.print("/");
@@ -174,28 +193,65 @@ void salvarDados(){
     myFile.print(",");
   
     myFile.print(sensorUmidade());
+    myFile.print(",");
+
+    myFile.print(situacaoBomba);
     myFile.println();
 
+    
 
-    // Terminou de escrever, fecha-se o arquivo:
+
+    // Terminou de escrever, fecha-se o arquivo
     myFile.close();
 
     Serial.println("Dados escritos com sucesso!.");
 
   }
   else {
-    // Se nao deu certo, comeca a dar merda desse ponto
+    // Se nao deu certo exibir mensagem de erro no monitor serial
     Serial.println("Nao foi possivel abrir o arquivo");
   }
   
     
 }
 
+int ligarBomba(){
+
+  if(sensorUmidadeSolo() <= limiteUmd){
+    while (sensorUmidadeSolo() <= limiteUmd){
+      apagaLeds();
+       digitalWrite(ledVermelho, LOW);
+      digitalWrite(bombaAgua, LOW);
+      situacaoBomba = 1;
+      return 0;
+      }
+    }else {
+      apagaLeds();
+      digitalWrite(ledVerde, LOW);
+      digitalWrite(bombaAgua, HIGH);
+      situacaoBomba = 0;
+    }
+
+ 
+  }
+  
+
+void apagaLeds()
+{
+  digitalWrite(ledVermelho, HIGH);
+  digitalWrite(ledVerde, HIGH);
+  digitalWrite(bombaAgua, HIGH);
+  
+}
+
 
 void loop() {
+  apagaLeds();
   myRTC.updateTime(); 
   exibirNoMonitorSerial();
   salvarDados();
+  ligarBomba();
+
 
   Serial.println("-------------------------------------");
 
